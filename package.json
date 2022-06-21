@@ -1,0 +1,26 @@
+{
+  "name": "os-api-mgmt",
+  "version": "1.0.0",
+  "description": "OpenSea API management to retrieve assets and orders by creating a service and saving data in mongodb",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Alonsso/os-api-mgmt.git"
+  },
+  "author": "alonsso",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Alonsso/os-api-mgmt/issues"
+  },
+  "homepage": "https://github.com/Alonsso/os-api-mgmt#readme",
+  "devDependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.1",
+    "mongoose": "^6.4.0",
+    "nodemon": "^2.0.16"
+  }
+}
