@@ -1,6 +1,10 @@
 require('dotenv').config()
 const express = require("express");
 const cors = require("cors");
+const mongoose = require('mongoose');
+
+//mongoose.connect("mongodb+srv://alonsso:cluster0621@alonsso-cluster.sdel12b.mongodb.net/?retryWrites=true&w=majority")
+mongoose.connect('mongodb://localhost:27017/itrm');
 
 const router = require('./routes/index');
 
