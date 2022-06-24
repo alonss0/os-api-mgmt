@@ -5,6 +5,8 @@ const DCLAssetSchema = new Schema({
     token_id: Schema.Types.String,
     last_sale: Schema.Types.Mixed,
     owner: Schema.Types.Mixed,
+    placed_orders: Schema.Types.Mixed,
+    prices: Schema.Types.Mixed,
 })
 
 const DCLAsset = model('DCLAsset', DCLAssetSchema);

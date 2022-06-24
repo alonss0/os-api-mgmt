@@ -1,220 +1,157 @@
 require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
-const axiosRetry = require("axios-retry");
-const fs = require("fs");
-const DCLAsset = require("../model/DCLAsset");
-const SBAsset = require("../model/SBAsset");
-const SOMAsset = require("../model/SOMAsset");
+const mongoose = require("mongoose");
+const { setTimeout } = require("timers/promises");
+
+const { Schema, model } = mongoose;
+
+//Create Schema
+const collectionSchema = mongoose.Schema({
+  token_id: Schema.Types.String,
+  placed_orders: Schema.Types.Mixed,
+  prices: Schema.Types.Mixed,
+  last_sale: Schema.Types.Mixed,
+  owner: Schema.Types.Mixed,
+});
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
-  res.send("server working");
-});
-
-axiosRetry(axios, {
-  retries: 5,
-  retryDelay: () => 30000,
-});
-
 router.get("/getData", async (req, res) => {
-  const metaverse = req.query.metaverse;
   const options = {
     method: "GET",
     headers: { Accept: "application/json", "X-API-KEY": process.env.X_API_KEY },
   };
-  switch (metaverse) {
-    case "somnium":
-      getSomniumData(options, 4979, 4999);
-      break;
-    case "sandbox":
-      getSandboxData(options, 102361, 102391);
-      break;
-    case "decentraland":
-      go(options, 1, 31);
-      break;
-    case "test":
-      const assetDcl = new DCLAsset({
-        token_id: "2",
-        last_sale: {
-          user: null,
-        },
-        owner: null,
-      });
-      console.log(assetDcl);
-      await assetDcl.save();
-      break;
-    default:
-      break;
-  }
+  await getData(options, "dclassets", process.env.DECENTRALAND);
 });
 
-const getTokensString = (start, end, cb) => {
-  fs.readFile("./listDecentraland.txt", (err, data) => {
-    if (err) throw err;
-    const arr = data.toString().split(",");
-    console.log(arr.length);
-    let str = "?";
-    for (let index = start; index < end; index++) {
-      let element = arr[index];
-      element = element.slice(2, element.length - 1);
-      str += "token_ids=" + element + "&";
-    }
-    console.log(str);
-    cb(str);
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
   });
-};
-
-function go(options, start = 1, end = 31) {
-  if (end > 92598) {
-    return;
-  }
-  getTokensString(start, end, async (str) => {
-    let tokens = str;
-    const url_dcl = `https://api.opensea.io/api/v1/assets${tokens}order_direction=asc&asset_contract_address=${process.env.DECENTRALAND}`;
-    const response_dcl = await axios.get(url_dcl, options);
-    const da = response_dcl.data["assets"].map((item) => {
-      return {
-        token_id: item["token_id"],
-        last_sale: item["last_sale"],
-        owner: item["owner"],
-      };
-    });
-
-    da.forEach(async (element) => {
-      const assetDcl = new DCLAsset({
-        token_id: element["token_id"],
-        last_sale: element["last_sale"],
-        owner: element["owner"],
-      });
-      await assetDcl
-        .save()
-        .then((result) => {})
-        .catch((err) => {
-          throw err;
-        });
-    });
-    start = end;
-    if(end == 92581){
-        end += 17;
-    } else {
-        end += 30;
-    }
-    go(options, start, end);
-  });
-  console.log(start, end);
 }
 
-const getTknStrSandbox = (start, end, cb) => {
-  fs.readFile("./listSandbox.txt", (err, data) => {
-    if (err) throw err;
-    const arr = data.toString().split(",");
-    console.log(arr.length);
-    let str = "?";
-    for (let index = start; index < end; index++) {
-      let element = arr[index];
-      element = element.slice(2, element.length - 1);
-      str += "token_ids=" + element + "&";
-    }
-    console.log(str);
-    cb(str);
-  });
-};
-
-function getSandboxData(options, start = 1, end = 31) {
-  if (end > 110290) {
-    return;
-  }
-  getTknStrSandbox(start, end, async (str) => {
-    let tokens = str;
-    const url_dcl = `https://api.opensea.io/api/v1/assets${tokens}order_direction=asc&asset_contract_address=${process.env.SANDBOX}`;
-    const response_dcl = await axios.get(url_dcl, options);
-    const da = response_dcl.data["assets"].map((item) => {
-      return {
-        token_id: item["token_id"],
-        last_sale: item["last_sale"],
-        owner: item["owner"],
-      };
-    });
-
-    da.forEach(async (element) => {
-      const assetSB = new SBAsset({
-        token_id: element["token_id"],
-        last_sale: element["last_sale"],
-        owner: element["owner"],
+async function retrieveAssets(options, tokens, coll, contractAddress) {
+  for (let index = 0; index < 5; index++) {
+    try {
+      const url = `https://api.opensea.io/api/v1/assets?${tokens}order_direction=desc&asset_contract_address=${contractAddress}&limit=20&include_orders=false`;
+      console.log("url > ", url);
+      const response = await axios.get(url, options);
+      const assets = response.data["assets"].map(async (item) => {
+        coll.findOneAndUpdate(
+          { token_id: item.token_id },
+          {
+            last_sale: item["last_sale"],
+            owner: item["owner"],
+          },
+          (err, doc) => {
+            if (err) throw err;
+            //console.log("asset: ", doc);
+          }
+        );
+        return {
+          last_sale: item["last_sale"],
+          owner: item["owner"],
+        };
       });
-      await assetSB
-        .save()
-        .then((result) => {
-          console.log(result);
-        })
-        .catch((err) => {
-          throw err;
-        });
-    });
-    start = end;
-    if(end == 110281){
-        end += 9;
-    } else {
-        end += 30;
+    } catch (error) {
+      console.log(
+        "> An error has ocurred, a new attemp to connect with Open Sea",
+        error
+      );
     }
-    getSandboxData(options, start, end);
-  });
-  console.log(start, end);
+    sleep(5000);
+  }
 }
 
-const getTknStrSomnium = (start, end, cb) => {
-  let str = "?";
-  let arr = Array.from({length: 5000}, (_, i) => i + 1)
-  for (let index = start; index <= end; index++) {
-    const element = arr[index];
-    str += "token_ids=" + element + "&";
-  }
-  console.log(str);
-  cb(str);
-};
-
-function getSomniumData(options, start = 4979, end = 4999) {
-  if (end > 5000) {
-    return;
-  }
-  getTknStrSomnium(start, end, async (str) => {
-    let tokens = str;
-    const url_dcl = `https://api.opensea.io/api/v1/assets${tokens}order_direction=asc&asset_contract_address=${process.env.SOMNIUM}`;
-    const response_dcl = await axios.get(url_dcl, options);
-    const da = response_dcl.data["assets"].map((item) => {
-      return {
-        token_id: item["token_id"],
-        last_sale: item["last_sale"],
-        owner: item["owner"],
-      };
-    });
-
-    da.forEach(async (element) => {
-      const assetSOM = new SOMAsset({
-        token_id: element["token_id"],
-        last_sale: element["last_sale"],
-        owner: element["owner"],
+async function retrieveOrders(options, tokens, coll, contractAddress, side) {
+  for (let index = 0; index < 5; index++) {
+    try {
+      const url = `https://api.opensea.io/wyvern/v1/orders?asset_contract_address=${contractAddress}&bundled=false&include_bundled=false&${tokens}side=${side}&limit=20&offset=0&order_by=created_date&order_direction=desc`;
+      const response = await axios.get(url, options);
+      console.log("url orders >", url);
+      const orders = response.data["orders"].map((order) => {
+        return {
+          orders: item.orders,
+        };
       });
-      await assetSOM
-        .save()
-        .then((result) => {
-          console.log(result);
-        })
-        .catch((err) => {
-          throw err;
-        });
-    });
-    start = end;
-    if(end == 4980){
-        end += 20;
-    } else {
-        end += 29;
+      for (let order of orders) {
+        if (order.asset.token_id) {
+          coll.findOneAndUpdate(
+            { token_id: order.asset.token_id },
+            {
+              placed_orders: order,
+            },
+            (err, doc) => {
+              if (err) throw err;
+              //console.log("asset: ", doc);
+            }
+          );
+        } else {
+          coll.findOneAndUpdate(
+            { token_id: order.asset.token_id },
+            {
+              placed_orders: [],
+            },
+            (err, doc) => {
+              if (err) throw err;
+              //console.log("asset: ", doc);
+            }
+          );
+        }
+      }
+    } catch (error) {
+      console.log(
+        "> An error has ocurred, a new attemp to connect with Open Sea",
+        error
+      );
     }
-    getSomniumData(options, start, end);
-  });
-  console.log(start, end);
+    sleep(3000);
+  }
+}
+
+function sliceIntoChunks(arr, chunkSize) {
+  const res = [];
+  for (let index = 0; index < arr.length; index += chunkSize) {
+    const chunk = arr.slice(index, index + chunkSize);
+    res.push(chunk);
+  }
+  return res;
+}
+
+async function getData(
+  options,
+  collectionName,
+  contractAddress
+) {
+  const coll = mongoose.model(collectionName, collectionSchema);
+  const docs = await coll.find({});
+  const chunks = sliceIntoChunks(docs, 19);
+
+  //console.log(chunks);
+  for (let index = 0; index <= chunks.length; index++) {
+    const current_chunk = chunks[index];
+    let tokens = "";
+    //console.log("current_chunk >>> ", current_chunk);
+    for (let j = 0; j < current_chunk.length; j++) {
+      //console.log("position j chunk", current_chunk[j]);
+      const token_id = current_chunk[j].token_id;
+      tokens += "token_ids=" + token_id + "&";
+    }
+
+    console.log(tokens);
+
+    Promise.allSettled([
+      await retrieveAssets(options, tokens, coll, contractAddress),
+      await retrieveOrders(options, tokens, coll, contractAddress, 0),
+      await retrieveOrders(options, tokens, coll, contractAddress, 1),
+    ]).then(
+      setTimeout(async () => {
+        await getData(options, collectionName, contractAddress);
+        console.log("Completed!");
+      }, 5000)
+    );
+  }
 }
 
 module.exports = router;
