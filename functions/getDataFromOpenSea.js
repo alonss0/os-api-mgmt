@@ -1,5 +1,6 @@
 const axios = require("axios");
-const collSchema = require("../model/collSchema");
+const collSchema = require("../schemas/collSchema");
+const mongoose = require("mongoose");
 
 function waitTime(millis) {
   let start = Date.now(),

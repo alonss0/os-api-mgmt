@@ -1,2 +1,5 @@
 node_modules/
 .env
+listDecentraland.csv
+listSandbox.csv
+listSom.csv
