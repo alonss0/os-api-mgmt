@@ -21,6 +21,8 @@ mongoose.connection.on("connected", (err, res) => {
     run();
 })
 
+mongoose.pluralize(null);
+
 const app = express();
 
 app.use(express.json());
