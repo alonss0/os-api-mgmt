@@ -17,7 +17,10 @@ const placedOrdersSchema = new Schema(
 
 //Create Schema
 const collectionSchema = new Schema({
-  token_id: Schema.Types.String,
+  token_id: {
+    type: Schema.Types.String,
+    unique: true,
+  },
   placed_orders: [placedOrdersSchema],
   traits: Schema.Types.Mixed,
   last_sale: Schema.Types.Mixed,

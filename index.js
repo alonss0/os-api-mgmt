@@ -10,7 +10,7 @@ const options = {
     headers: { Accept: "application/json", "X-API-KEY": process.env.X_API_KEY },
 }
 
-mongoose.connect("mongodb://localhost:27017/os-api");
+mongoose.connect(process.env.DBCONN);
 
 mongoose.connection.on("error", err => {
     console.log("err", err)
