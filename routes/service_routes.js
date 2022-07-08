@@ -5,6 +5,16 @@ const Web3 = require('web3');
 
 const router = express.Router();
 
+function containsDuplicates(array) {
+    const result = array.some(element => {
+        if (array.indexOf(element) !== array.lastIndexOf(element)) {
+            return true;
+        }
+        return false;
+    });
+    return result;
+}
+
 router.post('/addCollection', async (req, res) => {
     try {
         const collectionName = Web3.utils.toChecksumAddress(req.body.collectionName);
@@ -22,12 +32,12 @@ router.post('/addCollection', async (req, res) => {
 
 router.post('/addTokens', async (req, res) => {
     try {
-        if (req.query.token_id == null || req.query.collectionName == null) {
+        if (req.query.token_id == null || req.query.collection == null) {
             res.send("Provide at least one token_id and the collection name");
         } else if (req.query.token_id.length > 50) {
             res.send("token_id's must be less than 50");
         } else {
-            const collectionName = Web3.utils.toChecksumAddress(req.query.collectionName);
+            const collectionName = Web3.utils.toChecksumAddress(req.query.collection);
             const arr = await Mongoose.connection.db.listCollections().toArray();
             if (arr.some(coll => Web3.utils.toChecksumAddress(coll.name) === collectionName)) {
                 const model = Mongoose.model(collectionName, collSchema);
@@ -59,18 +69,17 @@ router.post('/addTokens', async (req, res) => {
 
 router.get('/getData', async (req, res) => {
     try {
-        if (req.query.token_id == null || req.query.collectionName == null) {
+        if (req.query.token_id == null || req.query.collection == null) {
             res.send("Provide at least one token_id and the collection name");
         } else {
-            const collectionName = Web3.utils.toChecksumAddress(req.query.collectionName);
+            const collectionName = Web3.utils.toChecksumAddress(req.query.collection);
             const arr = await Mongoose.connection.db.listCollections().toArray();
             if (arr.some(coll => Web3.utils.toChecksumAddress(coll.name) === collectionName)) {
                 const model = Mongoose.model(collectionName, collSchema);
                 const response = await model.find({
                     token_id: req.query.token_id
                 })
-                const result = JSON.stringify(response, getCircularReplacer());
-                res.send(result);
+                res.send({results: response});
             } else {
                 res.send("Collection doesn't exists!");
             }
@@ -79,29 +88,5 @@ router.get('/getData', async (req, res) => {
         res.status(500).send(`${error}`);
     }
 })
-
-const getCircularReplacer = () => {
-    const seen = new WeakSet();
-    return (key, value) => {
-        if (typeof value === 'object' && value !== null) {
-            if (seen.has(value)) {
-                return;
-            }
-            seen.add(value);
-        }
-        return value;
-    };
-};
-
-function containsDuplicates(array) {
-    const result = array.some(element => {
-        if (array.indexOf(element) !== array.lastIndexOf(element)) {
-            return true;
-        }
-        return false;
-    });
-    return result;
-}
-
 
 module.exports = router;
