@@ -183,7 +183,7 @@ async function retrieveListings(options, tokens, coll, contractAddress) {
       if (orders.length > 0) {
         console.log("LISTINGS WITH DATA >>>> ");
         for (let order of orders) {
-          if (order.taker_asset_bundle.assets[0].token_id) {
+          if (order.maker_asset_bundle.assets[0].token_id) {
             console.log(order.taker_asset_bundle.assets[0].token_id);
             const symbol = order.taker_asset_bundle.asset_contract.symbol;
             const current_date = getCurrentDate();
