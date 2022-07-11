@@ -62,7 +62,7 @@ const collectionSchema = new Schema({
     type: Schema.Types.String,
     unique: true,
   },
-  placed_orders: [placedOrdersSchema],
+  placed_orders: placedOrdersSchema,
   traits: Schema.Types.Mixed,
   last_sale: lastSaleSchema,
   owner: Schema.Types.Mixed,
