@@ -58,12 +58,13 @@ async function retrieveAssets(options, tokens, coll, contractAddress) {
           const date = new Date(item.last_sale.event_timestamp);
           const timestamp = date.getTime();
           const ls_price = parseInt(item.last_sale.total_price) / Math.pow(10, item.last_sale.payment_token.decimals);
-          const eth_price = ls_price * item.last_sale.payment_token.eth_price;
+          const eth_price = ls_price * parseFloat(item.last_sale.payment_token.eth_price);
+          const usd_price = ls_price * parseFloat(item.last_sale.payment_token.usd_price);
           const last_sale = {
             timestamp: timestamp,
             price: ls_price,
             eth_price: eth_price,
-            usd_price: parseInt(item.last_sale.payment_token.usd_price),
+            usd_price: usd_price,
             symbol: item.last_sale.payment_token.symbol,
           };
           coll.findOneAndUpdate(
@@ -121,45 +122,51 @@ async function retrieveOrders(options, tokens, coll, contractAddress) {
       const orders = response.data["orders"];
       if (orders.length > 0) {
         console.log("OFFERS WITH DATA >>>>>");
-        for (let order of orders) {
-          if (order.taker_asset_bundle.assets[0].token_id) {
-            const symbol = order.taker_asset_bundle.asset_contract.symbol;
-            const current_date = getCurrentDate();
-            const current_price = parseInt(order.current_price) / getTokenDivider(symbol);
-            const coin_eth_price = await getSymbolETHPrice(symbol, current_date);
-            const eth_price = current_price * coin_eth_price;
+        const dicc = new Map();
+        await orders.map(async (order) => {
+          const symbol = order.taker_asset_bundle.asset_contract.symbol;
+          const current_date = getCurrentDate();
+          const current_price = parseInt(order.current_price) / getTokenDivider(symbol);
+          const coin_eth_price = await getSymbolETHPrice(symbol, current_date);
+          const eth_price = current_price * coin_eth_price;
+          dicc.set(order.maker_asset_bundle.assets[0].token_id, [])
+          dicc.get(order.maker_asset_bundle.assets[0].token_id).push(
+            {
+              price: current_price,
+              order_hash: order.order_hash,
+              listing_time: order.listing_time,
+              expiration_time: order.expiration_time,
+              created_date: order.created_date,
+              closing_date: order.closing_date,
+              sell_orders: order.taker_asset_bundle.sell_orders,
+              order_type: order.order_type,
+              side: order.side,
+              maker: order.maker,
+              taker: order.taker,
+              symbol: symbol,
+              eth_price: eth_price,
+            }
+          );
+          dicc.forEach((value, key) => {
+            const maxEthPrice = value.reduce((prev, current) => (prev.eth_price > current.eth_price) ? prev : current);
             coll.findOneAndUpdate(
-              { token_id: order.taker_asset_bundle.assets[0].token_id },
+              { token_id: key },
               {
                 placed_orders: {
-                  offers: {
-                    price: current_price,
-                    order_hash: order.order_hash,
-                    listing_time: order.listing_time,
-                    expiration_time: order.expiration_time,
-                    created_date: order.created_date,
-                    closing_date: order.closing_date,
-                    sell_orders: order.taker_asset_bundle.sell_orders,
-                    order_type: order.order_type,
-                    side: order.side,
-                    maker: order.maker,
-                    taker: order.taker,
-                    symbol: symbol,
-                    eth_price: eth_price,
-                  }
+                  offers: value,
                 },
                 best_offered_price: {
-                  price: current_price,
-                  eth_price: eth_price,
-                  symbol: symbol,
-                },
+                  price: maxEthPrice.current_price,
+                  eth_price: maxEthPrice.eth_price,
+                  symbol: maxEthPrice.symbol,
+                }
               },
               (err, doc) => {
                 if (err) throw err;
               }
             );
-          }
-        }
+          });
+        });
       } else {
         console.log("OFFERS EMPTY >>>>>> ", orders);
       }
@@ -182,48 +189,53 @@ async function retrieveListings(options, tokens, coll, contractAddress) {
       const orders = response.data["orders"];
       if (orders.length > 0) {
         console.log("LISTINGS WITH DATA >>>> ");
-        for (let order of orders) {
-          if (order.maker_asset_bundle.assets[0].token_id) {
-            console.log(order.taker_asset_bundle.assets[0].token_id);
-            const symbol = order.taker_asset_bundle.asset_contract.symbol;
-            const current_date = getCurrentDate();
-            const current_price = parseInt(order.current_price) / getTokenDivider(symbol);
-            const coin_eth_price = await getSymbolETHPrice(symbol, current_date);
-            const eth_price = current_price * coin_eth_price;
-            coll.findOneAndUpdate(
-              { token_id: order.taker_asset_bundle.assets[0].token_id },
-              {
-                placed_orders: {
-                  listings: {
-                    price: current_price,
-                    order_hash: order.order_hash,
-                    listing_time: order.listing_time,
-                    expiration_time: order.expiration_time,
-                    created_date: order.created_date,
-                    closing_date: order.closing_date,
-                    sell_orders: order.taker_asset_bundle.sell_orders,
-                    order_type: order.order_type,
-                    side: order.side,
-                    maker: order.maker,
-                    taker: order.taker,
-                    symbol: symbol,
-                    eth_price: eth_price,
-                  }
-                },
-                current_price: {
-                  price: current_price,
-                  eth_price: eth_price,
-                  symbol: symbol,
-                },
+        const dicc = new Map();
+        await orders.map(async (order) => {
+          const symbol = order.taker_asset_bundle.asset_contract.symbol;
+          const current_date = getCurrentDate();
+          const current_price = parseInt(order.current_price) / getTokenDivider(symbol);
+          const coin_eth_price = await getSymbolETHPrice(symbol, current_date);
+          const eth_price = current_price * coin_eth_price;
+          dicc.set(order.maker_asset_bundle.assets[0].token_id, [])
+          dicc.get(order.maker_asset_bundle.assets[0].token_id).push(
+            {
+              price: current_price,
+              order_hash: order.order_hash,
+              listing_time: order.listing_time,
+              expiration_time: order.expiration_time,
+              created_date: order.created_date,
+              closing_date: order.closing_date,
+              sell_orders: order.taker_asset_bundle.sell_orders,
+              order_type: order.order_type,
+              side: order.side,
+              maker: order.maker,
+              taker: order.taker,
+              symbol: symbol,
+              eth_price: eth_price,
+            }
+          )
+        });
+        //console.log("DICC", dicc);
+        dicc.forEach((value, key) => {
+          const lowestEthPrice = value.reduce((prev, current) => (prev.eth_price > current.eth_price) ? prev : current);
+          coll.findOneAndUpdate(
+            { token_id: key },
+            {
+              placed_orders: {
+                listings: value,
               },
-              {returnNewDocument: true},
-              (err, doc) => {
-                if (err) throw err;
-                console.log("DOCUMENT UPDATED ", doc);
-              }
-            );
-          }
-        }
+              current_price: {
+                price: lowestEthPrice.current_price,
+                eth_price: lowestEthPrice.eth_price,
+                symbol: lowestEthPrice.symbol,
+              },
+            },
+            (err, doc) => {
+              if (err) throw err;
+              //console.log("DOCUMENT UPDATED ", doc);
+            }
+          )
+        });
       } else {
         console.log("LISTINGS EMPTY >>>>>> ", orders);
       }

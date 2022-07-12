@@ -1,37 +1,47 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-//Create sub schema
+
+const listingsSchema = new Schema(
+  {
+    price: Schema.Types.Mixed,
+    order_hash: Schema.Types.Mixed,
+    listing_time: Schema.Types.Mixed,
+    expiration_time: Schema.Types.Mixed,
+    created_date: Schema.Types.Mixed,
+    closing_date: Schema.Types.Mixed,
+    sell_orders: Schema.Types.Mixed,
+    maker: Schema.Types.Mixed,
+    taker: Schema.Types.Mixed,
+    side: Schema.Types.Mixed,
+    symbol: Schema.Types.Mixed,
+    eth_price: Schema.Types.Mixed,
+  },
+  { _id: false }
+);
+
+const offersSchema = new Schema(
+  {
+    price: Schema.Types.Mixed,
+    order_hash: Schema.Types.Mixed,
+    listing_time: Schema.Types.Mixed,
+    expiration_time: Schema.Types.Mixed,
+    created_date: Schema.Types.Mixed,
+    closing_date: Schema.Types.Mixed,
+    sell_orders: Schema.Types.Mixed,
+    maker: Schema.Types.Mixed,
+    taker: Schema.Types.Mixed,
+    side: Schema.Types.Mixed,
+    symbol: Schema.Types.String,
+    eth_price: Schema.Types.Mixed,
+  },
+  { _id: false }
+);
+
 const placedOrdersSchema = new Schema(
   {
-    listings: {
-      price: Schema.Types.Mixed,
-      order_hash: Schema.Types.Mixed,
-      listing_time: Schema.Types.Mixed,
-      expiration_time: Schema.Types.Mixed,
-      created_date: Schema.Types.Mixed,
-      closing_date: Schema.Types.Mixed,
-      sell_orders: Schema.Types.Mixed,
-      maker: Schema.Types.Mixed,
-      taker: Schema.Types.Mixed,
-      side: Schema.Types.Mixed,
-      symbol: Schema.Types.Mixed,
-      eth_price: Schema.Types.Mixed,
-    },
-    offers: {
-      price: Schema.Types.Mixed,
-      order_hash: Schema.Types.Mixed,
-      listing_time: Schema.Types.Mixed,
-      expiration_time: Schema.Types.Mixed,
-      created_date: Schema.Types.Mixed,
-      closing_date: Schema.Types.Mixed,
-      sell_orders: Schema.Types.Mixed,
-      maker: Schema.Types.Mixed,
-      taker: Schema.Types.Mixed,
-      side: Schema.Types.Mixed,
-      symbol: Schema.Types.String,
-      eth_price: Schema.Types.Mixed,
-    }
+    listings: [listingsSchema],
+    offers: [offersSchema]
   },
   { _id: false }
 );
