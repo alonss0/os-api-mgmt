@@ -57,7 +57,7 @@ async function retrieveAssets(options, tokens, coll, contractAddress) {
         if (item.last_sale != null) {
           const date = new Date(item.last_sale.event_timestamp);
           const timestamp = date.getTime();
-          const ls_price = parseInt(item.last_sale.total_price) / Math.pow(10, item.last_sale.payment_token.decimals);
+          const ls_price = parseInt(item.last_sale.total_price) / getTokenDivider(item.last_sale.payment_token.symbol);
           const eth_price = ls_price * parseFloat(item.last_sale.payment_token.eth_price);
           const usd_price = ls_price * parseFloat(item.last_sale.payment_token.usd_price);
           const last_sale = {
@@ -124,13 +124,13 @@ async function retrieveOrders(options, tokens, coll, contractAddress) {
         console.log("OFFERS WITH DATA >>>>>");
         const dicc = new Map();
         await orders.map(async (order) => {
-          const symbol = order.taker_asset_bundle.asset_contract.symbol;
+          const symbol = order.maker_asset_bundle.asset_contract.symbol;
           const current_date = getCurrentDate();
           const current_price = parseInt(order.current_price) / getTokenDivider(symbol);
           const coin_eth_price = await getSymbolETHPrice(symbol, current_date);
           const eth_price = current_price * coin_eth_price;
-          dicc.set(order.maker_asset_bundle.assets[0].token_id, [])
-          dicc.get(order.maker_asset_bundle.assets[0].token_id).push(
+          dicc.set(order.taker_asset_bundle.assets[0].token_id, [])
+          dicc.get(order.taker_asset_bundle.assets[0].token_id).push(
             {
               price: current_price,
               order_hash: order.order_hash,
@@ -147,6 +147,7 @@ async function retrieveOrders(options, tokens, coll, contractAddress) {
               eth_price: eth_price,
             }
           );
+          console.log(dicc);
           dicc.forEach((value, key) => {
             const maxEthPrice = value.reduce((prev, current) => (prev.eth_price > current.eth_price) ? prev : current);
             coll.findOneAndUpdate(
@@ -156,7 +157,7 @@ async function retrieveOrders(options, tokens, coll, contractAddress) {
                   offers: value,
                 },
                 best_offered_price: {
-                  price: maxEthPrice.current_price,
+                  price: maxEthPrice.price,
                   eth_price: maxEthPrice.eth_price,
                   symbol: maxEthPrice.symbol,
                 }
@@ -225,7 +226,7 @@ async function retrieveListings(options, tokens, coll, contractAddress) {
                 listings: value,
               },
               current_price: {
-                price: lowestEthPrice.current_price,
+                price: lowestEthPrice.price,
                 eth_price: lowestEthPrice.eth_price,
                 symbol: lowestEthPrice.symbol,
               },
