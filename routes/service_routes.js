@@ -17,7 +17,7 @@ function containsDuplicates(array) {
 
 router.post('/addCollection', async (req, res) => {
     try {
-        const collectionName = Web3.utils.toChecksumAddress(req.body.collectionName);
+        const collectionName = Web3.utils.toChecksumAddress(req.query.collection);
         const arr = await Mongoose.connection.db.listCollections().toArray();
         if (arr.some(coll => Web3.utils.toChecksumAddress(coll.name) === collectionName)) {
             res.send("Collection already exists!");
