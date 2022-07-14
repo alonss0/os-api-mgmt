@@ -9,7 +9,7 @@ DECENTRALAND="0xF87E31492Faf9A91B02Ee0dEAAd50d51d56D5d4d"
 X_API_KEY="64aa1996f0fa46fcaf35a21f24f2525a"
 DBCONN="mongodb://localhost:27017/os-api"
 
->> The database can be changed in DBCONN variable, in this case is `os-api`
+> The database can be changed in DBCONN variable, in this case is `os-api`
 
 ### WARNING
 
@@ -19,9 +19,9 @@ Each collection must be created using the service route
 
     /service/addCollection
     
-This is a POST Request and it receives a param called `collection`
+This is a POST Request and it receives a param called `collection`, e.g:
 
->> e.g `http://localhost:3003/service/addCollection/?collection=0x913ae503153d9A335398D0785Ba60A2d63dDB4e2`
+    http://localhost:3003/service/addCollection/?collection=0x913ae503153d9A335398D0785Ba60A2d63dDB4e2
 
 The above beacuse we need to be sure each collection has the contract address checksum version.
 
@@ -31,7 +31,7 @@ Use .csv files to load data into a mongodb collection (I used mongodb compass).
 
 In this way we can create multiple documents in db, then iterate over collection documents in the database.
 
->> e.g Somnium has 5000 tokens, all of those in one shot.
+> e.g Somnium has 5000 tokens, all of those in one shot.
 
 **Once the server detects collections in db it starts updating and adding the needed fields in each document after fetching data from OpenSea**
 
