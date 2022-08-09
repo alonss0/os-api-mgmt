@@ -133,4 +133,34 @@ router.get('/getData', async (req, res) => {
     }
 })
 
+router.get('/getCollections', async (req, res) => {
+    try {
+        const arr = await Mongoose.connection.db.listCollections().toArray();
+        res.send(arr);
+    } catch (error) {
+        res.status(500).send(`${error}`);
+    }
+});
+
+router.get('/deleteCollection', async (req, res) => {
+    try {
+        if (req.query.collection == null) {
+            res.send("Provide the collection name");
+        } else {
+            const collectionName = Web3.utils.toChecksumAddress(req.query.collection);
+            const arr = await Mongoose.connection.db.listCollections().toArray();
+            if (arr.some(coll => Web3.utils.toChecksumAddress(coll.name) === collectionName)) {
+                const response = Mongoose.connection.dropCollection(collectionName);
+                res.send({ results: response });
+            } else {
+                res.send("Collection doesn't exists!");
+            }
+        }
+    } catch (error) {
+        res.status(500).send(`${error}`);
+    }
+})
+
+
+
 module.exports = router;
