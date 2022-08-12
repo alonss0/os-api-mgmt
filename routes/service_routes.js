@@ -66,8 +66,8 @@ router.post('/addCollection', async (req, res) => {
         if (arr.some(coll => Web3.utils.toChecksumAddress(coll.name) === collectionName)) {
             res.send("Collection already exists!");
         } else {
-            Mongoose.model(collectionName, collSchema);
-            res.send("Collection added");
+            const cc = await Mongoose.connection.db.createCollection(collectionName);
+            res.send("Collection added" + cc);
         }
     } catch (error) {
         res.status(500).send(`${error}`);
@@ -150,7 +150,7 @@ router.get('/deleteCollection', async (req, res) => {
             const collectionName = Web3.utils.toChecksumAddress(req.query.collection);
             const arr = await Mongoose.connection.db.listCollections().toArray();
             if (arr.some(coll => Web3.utils.toChecksumAddress(coll.name) === collectionName)) {
-                const response = Mongoose.connection.dropCollection(collectionName);
+                const response = Mongoose.connection.db.dropCollection(collectionName);
                 res.send({ results: response });
             } else {
                 res.send("Collection doesn't exists!");
