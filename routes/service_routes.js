@@ -161,6 +161,27 @@ router.get('/deleteCollection', async (req, res) => {
     }
 })
 
+router.post('/getTokens', async (req, res) => {
+    try {
+        if(req.body.collection == null || req.body.tokenIds == null) {
+            res.send('Provide the collection and tokenIds on body as raw JSON');
+        } else {
+            const collectionName = Web3.utils.toChecksumAddress(req.body.collection);
+            const arr = await Mongoose.connection.db.listCollections().toArray();
+            if (arr.some(coll => Web3.utils.toChecksumAddress(coll.name) === collectionName)) {
+                const model = Mongoose.model(collectionName, collSchema);
+                const response = await model.find().where({
+                    token_id: req.body.tokenIds
+                })
+                res.send({ results: response });
+            } else {
+                res.send("Collection doesn't exists!");
+            }
+        }
+    } catch (error) {
+        res.status(500).send(`${error}`);
+    }
+})
 
 
 module.exports = router;
